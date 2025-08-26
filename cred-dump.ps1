@@ -71,10 +71,9 @@ if ($randChoice -eq 0) {
 
 # Modify permissions to make the ZIP file readable by everyone
 Write-Output "[+] Modifying ZIP file permissions"
-$acl = Get-Acl $zinxho
-$accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("Everyone", "FullControl", "Allow")
-$acl.SetAccessRule($accessRule)
-Set-Acl -Path $zinxho -AclObject $acl
+Write-Output "[+] Modifying ZIP file permissions using icacls"
+$icaclsCommand = "icacls `"$zinxho`" /grant Everyone:F /T"
+Invoke-Expression $icaclsCommand
 
 # Remove original files
 Write-Output "[-] Removing extracted files"
